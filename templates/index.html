@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>项目接单决策助手</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="logo-area">
+        <h1><span>🎯</span> 项目接单决策助手</h1>
+      </div>
+      <nav class="top-nav">
+        <button class="top-tab act" data-page="input" onclick="switchTab('input')">📝 信息录入与AI评估</button>
+        <button class="top-tab" data-page="database" onclick="switchTab('database')">🗄️ 资料库与人工决策</button>
+      </nav>
+      <div class="avatar">Admin</div>
+    </header>
+
+    <div class="content">
+      <!-- ================= 页面 1: 信息录入与 AI 评估 ================= -->
+      <div class="page show" id="page-input">
+        <div class="split-view">
+          <!-- 左侧：全字段信息录入 -->
+          <div class="panel-left">
+            <div class="card">
+              <h3>📝 项目信息录入 <span class="tag">支持文字/文件</span></h3>
+              <form id="analysisForm" onsubmit="event.preventDefault(); runAIAnalysis();">
+                <!-- 模块1：项目与客户基础 (对应数据库必填与核心字段) -->
+                <div style="font-size:12px;font-weight:600;color:var(--p);margin-bottom:10px;border-bottom:1px dashed var(--n-200);padding-bottom:6px">🏢 项目与客户基础</div>
+                <div class="row">
+                  <div>
+                    <label>项目名称 <span class="req">*</span></label><input type="text" id="pName" placeholder="如：智能风控系统一期" required />
+                  </div>
+                  <div>
+                    <label>客户公司名称 <span class="req">*</span></label><input type="text" id="cName" placeholder="如：星辰科技" required />
+                  </div>
+                </div>
+                <div class="row three">
+                  <div>
+                    <label>联系人</label><input type="text" id="cPerson" placeholder="姓名/职位" />
+                  </div>
+                  <div>
+                    <label>联系电话</label><input type="text" id="cPhone" placeholder="手机号" />
+                  </div>
+                  <div>
+                    <label>客户行业</label>
+                    <select id="cIndustry">
+                      <option value="金融">金融</option>
+                      <option value="IT/互联网">IT/互联网</option>
+                      <option value="制造业">制造业</option>
+                      <option value="政府/国企">政府/国企</option>
+                      <option value="其他">其他</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row three">
+                  <div>
+                    <label>公司规模</label>
+                    <select id="cSize">
+                      <option value="小型">小型(<50人)</option>
+                      <option value="中型">中型(50-500人)</option>
+                      <option value="大型">大型(500-5000人)</option>
+                      <option value="超大型">超大型(5000+人)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>项目预算(万) <span class="req">*</span></label><input type="number" id="pBudget" placeholder="350" required />
+                  </div>
+                  <div>
+                    <label>项目周期(月) <span class="req">*</span></label><input type="number" id="pDuration" placeholder="8" required />
+                  </div>
+                </div>
+
+                <!-- 模块2：项目执行细节 -->
+                <div style="font-size:12px;font-weight:600;color:var(--g);margin:14px 0 10px;border-bottom:1px dashed var(--n-200);padding-bottom:6px">⚙️ 项目执行细节</div>
+                <div class="row three">
+                  <div>
+                    <label>需求人数(人月)</label><input type="number" id="pHeadcount" placeholder="60" />
+                  </div>
+                  <div>
+                    <label>项目类型</label>
+                    <select id="pType">
+                      <option value="软件开发">软件开发</option>
+                      <option value="硬件集成">硬件集成</option>
+                      <option value="咨询顾问">咨询顾问</option>
+                      <option value="运维服务">运维服务</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>付款方式</label>
+                    <select id="pPayment">
+                      <option value="里程碑付款">里程碑付款</option>
+                      <option value="按月付款">按月付款</option>
+                      <option value="预付款+尾款">预付款+尾款</option>
+                      <option value="未确定">未确定</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="margin-bottom:14px">
+                  <label>项目需求描述 <span class="req">*</span></label>
+                  <textarea id="pDesc" placeholder="详细描述客户需要做什么..." required></textarea>
+                </div>
+                <div style="margin-bottom:14px">
+                  <label>补充说明 / 特殊要求</label>
+                  <textarea id="pExtra" placeholder="如：交付时间紧、需要驻场、数据不能出域等"></textarea>
+                </div>
+
+                <!-- 文件上传 -->
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                  <div class="up-icon">📁</div>
+                  <div class="up-text">拖拽或点击上传需求文档</div>
+                  <div class="up-sub">支持 PDF/Word/TXT，自动提取关键信息</div>
+                  <input type="file" id="fileInput" style="display:none" onchange="handleFiles(this.files)" />
+                </div>
+                <div class="file-list" id="fileList"></div>
+
+                <button type="submit" class="btn btn-p" style="width:100%;justify-content:center;padding:12px;margin-top:16px">🚀 获取 AI 评估与打分</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 右侧：AI 评估结果 -->
+          <div class="panel-right">
+            <div id="aiPlaceholder" class="card empty-state">
+              <div class="e-icon">🤖</div>
+              <h3>等待 AI 深度评估</h3>
+              <p>请在左侧填写完整的项目与客户信息，AI 将为您提供多维度的评分、风险识别与收益测算。</p>
+            </div>
+            <div id="aiLoading" class="card ai-loading" style="display:none">
+              <div class="ai-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="txt">AI 正在深度分析项目可行性、测算收益并识别风险...</span>
+            </div>
+            <div id="aiResult" style="display:none">
+              <div class="card">
+                <h3>📊 AI 综合评分</h3><div id="scoreWrap" class="score-wrap"></div>
+              </div>
+              <div class="card">
+                <h3>⚠️ 风险自动识别</h3><div id="riskList"></div>
+              </div>
+              <div class="card">
+                <h3>💰 收益测算</h3><div id="profitGrid" class="profit-grid"></div>
+              </div>
+              <div class="card">
+                <h3>📋 AI 详细评估意见</h3>
+                <div id="reportContent" class="report-content"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 页面 2: 资料库与人工决策 ================= -->
+      <div class="page" id="page-database">
+        <div class="card">
+          <h3>🗄️ 项目资料库与人工决策中心</h3>
+          <div class="search-bar">
+            <input type="text" id="dbSearch" placeholder="🔍 搜索项目名称或客户..." oninput="renderDatabase()" />
+            <select id="dbFilter" onchange="renderDatabase()">
+              <option value="all">全部项目</option>
+              <option value="可以接">✅ 可以接</option>
+              <option value="谨慎谈">⚠️ 谨慎谈</option>
+              <option value="直接拒绝">❌ 直接拒绝</option>
+              <option value="待评估">⏳ 待评估</option>
+            </select>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr>
+                <th>项目/客户</th>
+                <th>行业</th>
+                <th>预算(万)</th>
+                <th>AI评分</th>
+                <th>风险</th>
+                <th>当前状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="dbBody">
+              <tr>
+                <td colspan="7" style="text-align:center;padding:20px;">加载中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗 1: 查看 AI 评价 & 下载 PDF -->
+    <div class="modal-overlay" id="aiReportModal">
+      <div class="modal" style="width: 500px;">
+        <div class="m-icon">🤖</div>
+        <h3 id="aiReportTitle">AI 评估报告</h3>
+        <div id="aiReportContent" style="text-align:left;margin:20px 0;max-height:400px;overflow-y:auto;font-size:13px;line-height:1.8;white-space:pre-wrap;"></div>
+        <div class="actions">
+          <button class="btn btn-o" onclick="document.getElementById('aiReportModal').classList.remove('show')">关闭</button>
+          <button class="btn btn-p" id="aiReportDownloadBtn">⬇️ 下载 PDF 报告</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗 2: 人工审批决策 -->
+    <div class="modal-overlay" id="decisionModal">
+      <div class="modal">
+        <div class="m-icon">⚖️</div>
+        <h3>人工审批决策</h3>
+        <div style="text-align:left;margin:20px 0">
+          <p style="font-size:13px;color:var(--n-600);margin-bottom:12px">
+            <strong>项目：</strong><span id="modalProjectName"></span>
+          </p>
+          <label style="font-size:12px;font-weight:600;margin-bottom:6px;display:block">最终决策：</label>
+          <select id="modalDecisionSelect" style="width:100%;margin-bottom:12px">
+            <option value="待评估">⏳ 待评估</option>
+            <option value="可以接">✅ 可以接</option>
+            <option value="谨慎谈">⚠️ 谨慎谈</option>
+            <option value="直接拒绝">❌ 直接拒绝</option>
+          </select>
+          <label style="font-size:12px;font-weight:600;margin-bottom:6px;display:block">人工审批意见：</label>
+          <textarea id="modalRemark" rows="3" placeholder="请输入您的审批意见..."></textarea>
+        </div>
+        <div class="actions">
+          <button class="btn btn-o" onclick="document.getElementById('decisionModal').classList.remove('show')">取消</button>
+          <button class="btn btn-p" onclick="submitDecisionChange()">💾 保存决策</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+    <script src="/static/main.js"></script>
+  </body>
+</html>
